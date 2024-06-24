@@ -65,7 +65,7 @@ export default function BasicFormControl() {
       method: 'POST',
       body: formData,
     });
-    console.log(formdata)
+    
 
     if (!response.ok) {
       throw new Error('Failed to upload file to backend');
