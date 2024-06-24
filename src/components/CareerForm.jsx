@@ -44,55 +44,126 @@ export default function BasicFormControl() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     if (!file) {
       alert('Please upload a PDF file.');
       return;
     }
-  
-    const formData = new FormData();
-    formData.append('first_name', firstName);
-    formData.append('last_name', lastName);
-    formData.append('email', email);
-    formData.append('phone', phone);
-    formData.append('education', education);
-    formData.append('experience', experience);
-    formData.append('file', file);
-  
-   
+
     try {
-    const response = await fetch('http://127.0.0.1:8000/api/upload' , {
-      method: 'POST',
-      body: formData,
-    });
-    
+      const googleAuth = gapi.auth2.getAuthInstance();
+      const user = googleAuth.currentUser.get();
+      const oauthToken = user.getAuthResponse().access_token;
 
-    if (!response.ok) {
-      throw new Error('Failed to upload file to backend');
+      const formData = new FormData();
+      formData.append('first_name', firstName);
+      formData.append('last_name', lastName);
+      formData.append('email', email);
+      formData.append('phone', phone);
+      formData.append('education', education);
+      formData.append('experience', experience);
+      formData.append('file', file);
+
+      const metadata = {
+        name: file.name,
+        mimeType: file.type,
+        parents: ['1GqbdRQRnpb5uOvjGGyn4BqWw-URkDdvQ']
+      };
+
+      const uploadData = new FormData();
+      uploadData.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+      uploadData.append('file', file);
+
+      const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+        method: 'POST',
+        headers: new Headers({ 'Authorization': 'Bearer ' + oauthToken }),
+        body: uploadData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to upload file to Google Drive');
+      }
+
+      console.log('File uploaded successfully:', await response.json());
+      alert('File uploaded successfully!');
+    } catch (error) {
+      console.error('Error uploading file to Google Drive:', error);
+      alert('Failed to upload file. Please try again later.');
     }
+  };
 
-    console.log('File uploaded successfully:', await response.json());
-    alert('File uploaded successfully!');
-  } catch (error) {
-    console.error('Error uploading file to backend:', error);
-    alert('Failed to upload file. Please try again later.');
-  }
-}
-  
-  
   useEffect(() => {
     const initClient = () => {
       gapi.client.init({
-        apiKey: 'AIzaSyANZPxo2qRdlEf3tTJ2REMx8OwkQO4AGN0', // Replace with your API key
-        clientId: '944016285769-asjlr5ueo7frtiakfq7eilg53i64sp2m.apps.googleusercontent.com', // Replace with your Client ID
-        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] ,
+        apiKey: 'AIzaSyAFnhqK2v6kJuBgXF2Q5i37acrq7-SxuZ4', // Replace with your API key
+        clientId: '241767684569-055n8g94dkqnjiclj81kg666l0jnl55h.apps.googleusercontent.com', // Replace with your Client ID
+        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
         scope: 'https://www.googleapis.com/auth/drive.file',
+        // Add the correct redirect URI here
+        redirect_uri: 'http://localhost:3000/careers-form'
+      }).then(() => {
+        gapi.auth2.getAuthInstance().signIn();
       });
     };
-
+  
     gapi.load('client:auth2', initClient);
-    
   }, []);
+
+//   const handleSubmit = async (e) => {
+//     e.preventDefault();
+  
+//     if (!file) {
+//       alert('Please upload a PDF file.');
+//       return;
+//     }
+  
+//     const formData = new FormData();
+//     formData.append('first_name', firstName);
+//     formData.append('last_name', lastName);
+//     formData.append('email', email);
+//     formData.append('phone', phone);
+//     formData.append('education', education);
+//     formData.append('experience', experience);
+//     formData.append('file', file);
+
+//     for (let [key, value] of formData.entries()) {
+//       console.log(key, value);
+//     }
+  
+   
+//     try {
+//     const response = await fetch('http://127.0.0.1:8000/api/upload' , {
+//       method: 'POST',
+//       body: formData,
+//     });
+    
+
+//     if (!response.ok) {
+//       throw new Error('Failed to upload file to backend');
+//     }
+
+//     console.log('File uploaded successfully:', await response.json());
+//     alert('File uploaded successfully!');
+//   } catch (error) {
+//     console.error('Error uploading file to backend:', error);
+//     alert('Failed to upload file. Please try again later.');
+//   }
+// }
+  
+  
+//   useEffect(() => {
+//     const initClient = () => {
+//       gapi.client.init({
+//         apiKey: 'AIzaSyANZPxo2qRdlEf3tTJ2REMx8OwkQO4AGN0', // Replace with your API key
+//         clientId: '944016285769-asjlr5ueo7frtiakfq7eilg53i64sp2m.apps.googleusercontent.com', // Replace with your Client ID
+//         discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'] ,
+//         scope: 'https://www.googleapis.com/auth/drive.file',
+//       });
+//     };
+
+//     gapi.load('client:auth2', initClient);
+    
+//   }, []);
   
 
   const handleNext = () => setStep((prev) => prev + 1);
